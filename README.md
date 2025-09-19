@@ -1,5 +1,3 @@
-Of course. Here is a comprehensive README file for your GitHub repository. You can copy and paste this directly into a file named README.md.
-
 Army Fighters 1v1
 Army Fighters 1v1 is a fast-paced, side-scrolling fighting game built with pure HTML, CSS, and JavaScript. Engage in intense combat across diverse battlefields, upgrade your soldier in the Barracks, and conquer a challenging campaign filled with powerful enemies and epic boss fights.
 
