@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Army Fighters 1v1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 450px;
+            border: 4px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            transition: transform 0.1s ease-out;
+        }
+        
+        #game-canvas {
+            background-color: #0d1b2a;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .health-bar, .super-meter {
+            position: absolute;
+            top: 20px;
+            height: 25px;
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .super-meter {
+            top: 50px;
+            height: 15px;
+        }
+        
+        #player-health { left: 20px; }
+        #enemy-health { right: 20px; }
+        #player-super-meter { left: 20px; }
+        #enemy-super-meter { right: 20px; }
+        
+        .health-fill, .super-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.2s linear;
+        }
+        
+        #player-health .health-fill { 
+            background: linear-gradient(to right, #4CAF50, #8BC34A);
+            box-shadow: 0 0 10px #4CAF50, inset 0 0 5px rgba(255,255,255,0.3);
+        }
+        #enemy-health .health-fill { background: linear-gradient(to right, #F44336, #E57373); }
+        #player-super-meter .super-fill { background: linear-gradient(to right, #00BCD4, #80DEEA); }
+        #enemy-super-meter .super-fill { background: linear-gradient(to right, #FFC107, #FFD54F); }
+        
+        .health-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .low-health {
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 10px #F44336, inset 0 0 5px rgba(255,255,255,0.3); }
+            50% { box-shadow: 0 0 20px #E57373, inset 0 0 10px rgba(255,255,255,0.5); }
+            100% { box-shadow: 0 0 10px #F44336, inset 0 0 5px rgba(255,255,255,0.3); }
+        }
+        
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        #combo-counter {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffc107;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            transform-origin: bottom;
+        }
+
+        #combo-counter.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1.2);
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        #home-screen {
+            background-image: url('https://placehold.co/800x450/2c5d3c/FFFFFF?text=Mountain+Camp');
+            background-size: cover;
+        }
+
+        #selection-screen {
+            background: linear-gradient(to bottom, #004e92, #000428);
+            display: none;
+        }
+        
+        #barracks-screen {
+            background: linear-gradient(to bottom, #424242, #212121);
+            display: none;
+        }
+        
+        h1 {
+            font-size: 52px;
+            margin-bottom: 5px;
+            color: #ff8800;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            background: linear-gradient(to bottom, #ff8800, #ff5500);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(to bottom, #ff9900, #ff6600);
+        }
+        
+        .location-btn, .weapon-btn {
+            width: 150px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .location-btn.selected, .weapon-btn.selected {
+            border-color: #fdbb2d;
+            box-shadow: 0 0 15px #fdbb2d;
+        }
+        
+        .selection-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+        
+        #player-name-input {
+            padding: 10px;
+            border-radius: 20px;
+            border: 2px solid #ff8800;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            margin: 15px 0;
+            pointer-events: auto;
+            outline: none;
+        }
+
+        .upgrade-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px 0;
+        }
+
+        .upgrade-item {
+            text-align: center;
+        }
+
+        #ultimate-move-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            color: #ffc107;
+            font-weight: bold;
+            text-shadow: 3px 3px 8px black;
+            opacity: 0;
+            z-index: 200;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas" width="800" height="450"></canvas>
+        
+        <div id="ui-container">
+            <div id="player-health" class="health-bar"><div class="health-fill"></div><div class="health-text">PLAYER: 100%</div></div>
+            <div id="enemy-health" class="health-bar"><div class="health-fill"></div><div class="health-text">ENEMY: 100%</div></div>
+            <div id="player-super-meter" class="super-meter"><div class="super-fill"></div></div>
+            <div id="enemy-super-meter" class="super-meter"><div class="super-fill"></div></div>
+            <div id="score">FIGHT!</div>
+            <div id="combo-counter"></div>
+            <div id="ultimate-move-display"></div>
+        </div>
+        
+        <div id="home-screen" class="screen">
+            <h1>ARMY FIGHTERS 1v1</h1>
+            <p>Enter your callsign, soldier.</p>
+            <input type="text" id="player-name-input" placeholder="Type your name..." maxlength="12">
+            <button id="play-btn" class="btn">CAMPAIGN</button>
+            <button id="random-mode-btn" class="btn">RANDOM FIGHT</button>
+            <button id="barracks-btn" class="btn">BARRACKS</button>
+        </div>
+
+        <div id="barracks-screen" class="screen">
+            <h2>BARRACKS</h2>
+            <p>Intel Points: <span id="intel-points-display">0</span></p>
+            <div class="upgrade-container">
+                <div class="upgrade-item">
+                    <p>HEALTH (<span id="health-level">1</span>)</p>
+                    <button id="upgrade-health-btn" class="btn">Upgrade (100 IP)</button>
+                </div>
+                <div class="upgrade-item">
+                    <p>DAMAGE (<span id="damage-level">1</span>)</p>
+                    <button id="upgrade-damage-btn" class="btn">Upgrade (100 IP)</button>
+                </div>
+                <div class="upgrade-item">
+                    <p>SPEED (<span id="speed-level">1</span>)</p>
+                    <button id="upgrade-speed-btn" class="btn">Upgrade (100 IP)</button>
+                </div>
+            </div>
+            <button id="back-to-home-from-barracks-btn" class="btn">Back to Home</button>
+        </div>
+
+        <div id="selection-screen" class="screen">
+            <h2 id="level-display">LEVEL 1 - FIGHT 1</h2>
+            <p><strong>BATTLEFIELD</strong></p>
+            <div id="location-selection-container" class="selection-container"></div>
+            <p><strong>WEAPON LOADOUT</strong></p>
+            <div class="selection-container">
+                <button class="btn weapon-btn selected" data-weapon="rifle">RIFLE</button>
+                <button class="btn weapon-btn" data-weapon="knife">KNIFE</button>
+                <button class="btn weapon-btn" data-weapon="fist">FISTS</button>
+            </div>
+            <div class="selection-container">
+                <button id="start-btn" class="btn">START MISSION</button>
+                <button id="back-to-home-btn" class="btn">Back to Home</button>
+            </div>
+        </div>
+        
+        <div id="game-over-screen" class="screen">
+            <h2 id="game-over-title">MISSION SUCCESS</h2>
+            <div id="winner-text"></div>
+            <p>Intel Points Earned: <span id="intel-earned-display">0</span></p>
+            <button id="next-level-btn" class="btn">NEXT LEVEL</button>
+            <button id="main-menu-btn" class="btn">MAIN MENU</button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS ---
+            const gameContainer = document.getElementById('game-container');
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const homeScreen = document.getElementById('home-screen');
+            const selectionScreen = document.getElementById('selection-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const barracksScreen = document.getElementById('barracks-screen');
+            const playerHealthBar = document.querySelector('#player-health .health-fill');
+            const playerHealthText = document.querySelector('#player-health .health-text');
+            const enemyHealthBar = document.querySelector('#enemy-health .health-fill');
+            const enemyHealthText = document.querySelector('#enemy-health .health-text');
+            const playerSuperBar = document.querySelector('#player-super-meter .super-fill');
+            const enemySuperBar = document.querySelector('#enemy-super-meter .super-fill');
+            const winnerText = document.getElementById('winner-text');
+            const scoreText = document.getElementById('score');
+            const playBtn = document.getElementById('play-btn');
+            const randomModeBtn = document.getElementById('random-mode-btn');
+            const barracksBtn = document.getElementById('barracks-btn');
+            const playerNameInput = document.getElementById('player-name-input');
+            const startBtn = document.getElementById('start-btn');
+            const nextLevelBtn = document.getElementById('next-level-btn');
+            const mainMenuBtn = document.getElementById('main-menu-btn');
+            const weaponBtns = document.querySelectorAll('.weapon-btn');
+            const levelDisplay = document.getElementById('level-display');
+            const gameOverTitle = document.getElementById('game-over-title');
+            const backToHomeBtn = document.getElementById('back-to-home-btn');
+            const locationSelectionContainer = document.getElementById('location-selection-container');
+            const comboCounter = document.getElementById('combo-counter');
+            const intelPointsDisplay = document.getElementById('intel-points-display');
+            const upgradeHealthBtn = document.getElementById('upgrade-health-btn');
+            const upgradeDamageBtn = document.getElementById('upgrade-damage-btn');
+            const upgradeSpeedBtn = document.getElementById('upgrade-speed-btn');
+            const healthLevelDisplay = document.getElementById('health-level');
+            const damageLevelDisplay = document.getElementById('damage-level');
+            const speedLevelDisplay = document.getElementById('speed-level');
+            const backToHomeFromBarracksBtn = document.getElementById('back-to-home-from-barracks-btn');
+            const intelEarnedDisplay = document.getElementById('intel-earned-display');
+            const ultimateMoveDisplay = document.getElementById('ultimate-move-display');
+
+            // --- GAME STATE VARIABLES ---
+            let gameRunning = false;
+            let playerName = "PLAYER";
+            let selectedWeapon = 'rifle';
+            let player, enemy;
+            let projectiles = [];
+            let particles = [];
+            let lastTime = 0;
+            let isRandomMode = false;
+            let combo = { count: 0, timer: 0, target: null };
+            let ultimateNames = { rifle: "DEADEYE", knife: "VIPER STRIKE", fist: "OVERWHELM" };
+
+            const playerStats = { health: 1, damage: 1, speed: 1, intelPoints: 0 };
+            const gameState = { level: 1, fightInLevel: 1, randomLevel: 1 };
+
+            const locations = ["desert", "forest", "city", "camp", "factory", "graveyard", "clouds", "underground", "ocean"];
+            let currentLocation = locations[0];
+            let parallaxOffset = 0;
+
+            // --- INPUT HANDLING ---
+            const keys = {};
+            window.addEventListener('keydown', e => {
+                if (e.key) {
+                    keys[e.key.toLowerCase()] = true;
+                }
+            });
+            window.addEventListener('keyup', e => {
+                if (e.key) {
+                    keys[e.key.toLowerCase()] = false;
+                }
+            });
+            
+            // --- BACKGROUNDS & VISUALS ---
+            const backgrounds = {
+                home: { color: '#2c5d3c', layers: [] },
+                desert: {
+                    color: '#e6b87a',
+                    layers: [
+                        { color: '#d9a565', speed: 0.2, y: 300, height: 150 }, // Far dunes
+                        { color: '#c79753', speed: 0.5, y: 350, height: 100 }, // Mid dunes
+                    ],
+                    ground: '#b0834b'
+                },
+                forest: {
+                    color: '#2d5a37',
+                    layers: [
+                        { color: '#3a7d44', speed: 0.2, y: 250, height: 200 }, // Back trees
+                        { color: '#5d4037', speed: 0.5, y: 320, height: 130 }, // Foregrounds
+                    ],
+                    ground: '#4a332d'
+                },
+                city: {
+                    color: '#546E7A',
+                    layers: [
+                        { color: '#37474F', speed: 0.2, y: 100, height: 350 }, // Buildings
+                        { color: '#607D8B', speed: 0.5, y: 250, height: 200 }, // Closer buildings
+                    ],
+                    ground: '#455A64'
+                },
+                // Add more detailed layers for other locations
+                camp: { color: '#8d6e63', layers: [], ground: '#5d4037' },
+                factory: { color: '#546E7A', layers: [], ground: '#37474F' },
+                graveyard: { color: '#263238', layers: [], ground: '#1a2327' },
+                clouds: { color: '#81D4FA', layers: [], ground: '#FFFFFF' },
+                underground: { color: '#4E342E', layers: [], ground: '#3E2723' },
+                ocean: { color: '#0097A7', layers: [], ground: '#E0F7FA' }
+            };
+
+            // --- CLASSES ---
+            class Projectile {
+                constructor(x, y, speed, owner) {
+                    this.x = x; this.y = y; this.width = 10; this.height = 4;
+                    this.speed = speed; this.owner = owner; this.color = '#FFEB3B';
+                }
+
+                update(deltaTime) {
+                    this.x += this.speed * deltaTime;
+                    const target = this.owner.isEnemy ? player : enemy;
+                    if (target && collision(this, target)) {
+                        const dmg = 22 * (this.owner.isEnemy ? 1 : playerStats.damage);
+                        target.takeDamage(dmg, this.owner);
+                        this.remove();
+                    }
+                    if (this.x < 0 || this.x > canvas.width) this.remove();
+                }
+
+                draw() {
+                    ctx.fillStyle = this.color; ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 10; ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.shadowBlur = 0;
+                }
+
+                remove() { projectiles = projectiles.filter(p => p !== this); }
+            }
+
+            class Particle {
+                constructor(x, y, color, size, life) {
+                    this.x = x; this.y = y; this.color = color;
+                    this.size = Math.random() * size + 2;
+                    this.life = life; this.maxLife = life;
+                    this.velocity = { x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8 };
+                }
+
+                update(deltaTime) {
+                    this.life -= deltaTime;
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.velocity.y += 0.2; // Gravity on particles
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.life / this.maxLife;
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            class Player {
+                constructor(x, y, color, weapon, isEnemy = false) {
+                    Object.assign(this, { x, y, color, weapon, isEnemy });
+                    this.width = 40; this.height = 60;
+                    this.speed = 240 * (isEnemy ? 1 : playerStats.speed);
+                    this.jumpPower = 700; this.gravity = 1800;
+                    this.velocityY = 0; this.isGrounded = false;
+                    this.baseHealth = isEnemy ? (90 + (isRandomMode ? gameState.randomLevel : gameState.level) * 12) : (150 * playerStats.health); // Increased player base health
+                    this.health = this.baseHealth; this.maxHealth = this.baseHealth;
+                    this.cooldown = 0; this.facing = isEnemy ? -1 : 1;
+                    this.superMeter = 0; this.isBlocking = false; this.stunTimer = 0; this.parryWindow = 0;
+                    // Animation state
+                    this.state = 'idle'; // 'idle', 'walk', 'jump', 'attack', 'hurt'
+                    this.frameTimer = 0;
+                    this.hurtTimer = 0;
+                }
+                
+                update(deltaTime) {
+                    if (this.stunTimer > 0) { this.stunTimer -= deltaTime; this.state = 'hurt'; return; }
+                    if (this.hurtTimer > 0) this.hurtTimer -= deltaTime; else this.state = 'idle';
+                    
+                    if (this.parryWindow > 0) this.parryWindow -= deltaTime;
+
+                    if (!this.isGrounded) { this.velocityY += this.gravity * deltaTime; this.y += this.velocityY * deltaTime; this.state = 'jump'; }
+                    if (this.y >= canvas.height - 100 - this.height) { this.y = canvas.height - 100 - this.height; this.velocityY = 0; this.isGrounded = true; }
+                    
+                    this.isBlocking = keys['shift'];
+                    if (keys['shift'] && !this.wasBlocking) this.parryWindow = 0.15;
+                    this.wasBlocking = this.isBlocking;
+
+                    if (!this.isEnemy) {
+                        let isMoving = false;
+                        if (!this.isBlocking) {
+                            if (keys['a'] || keys['arrowleft']) { this.x -= this.speed * deltaTime; this.facing = -1; isMoving = true; }
+                            if (keys['d'] || keys['arrowright']) { this.x += this.speed * deltaTime; this.facing = 1; isMoving = true; }
+                        }
+                        if (isMoving && this.isGrounded) this.state = 'walk';
+
+                        if ((keys['w'] || keys['arrowup']) && this.isGrounded) { this.velocityY = -this.jumpPower; this.isGrounded = false; }
+                        if (keys[' '] && this.cooldown <= 0) this.attack();
+                        if (keys['q'] && this.superMeter >= 100) this.ultimate();
+                    } else { // ENEMY AI
+                        const target = player;
+                        if (!target) return;
+                        const distance = Math.abs(target.x - this.x);
+                        if (this.stunTimer <= 0) {
+                            // AI Decision Making
+                            if (distance > 200 && this.weapon === 'rifle') { // Keep distance for rifle
+                                this.x += (target.x > this.x ? -1 : 1) * this.speed * 0.4 * deltaTime;
+                                if (this.cooldown <= 0 && Math.random() < 0.6) this.attack(); // Reduced attack frequency
+                            } else if (distance > 60) { // Close in for melee
+                                this.x += (target.x > this.x ? 1 : -1) * this.speed * 0.5 * deltaTime;
+                                if (this.state !== 'jump') this.state = 'walk';
+                            } else { // In melee range
+                                if (this.cooldown <= 0) this.attack();
+                            }
+                            // AI defensive moves
+                            if (target.state === 'attack' && distance < 100 && Math.random() < 0.25) this.isBlocking = true; else this.isBlocking = false; // Reduced block chance
+                        }
+                    }
+
+                    if (this.cooldown > 0) this.cooldown -= deltaTime;
+                    this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+                }
+
+                attack() {
+                    this.state = 'attack';
+                    this.frameTimer = 0.3; // Duration of attack animation
+
+                    if (this.weapon === 'rifle') {
+                        const projectileX = this.x + (this.facing > 0 ? this.width : 0);
+                        const projectileY = this.y + 27;
+                        projectiles.push(new Projectile(projectileX, projectileY, 600 * this.facing, this));
+                        createParticles(projectileX, projectileY, '#FFA000', 5, 0.3); // Muzzle flash
+                        this.cooldown = 0.6;
+                    } else {
+                        const dmg = (this.weapon === 'knife' ? 18 : 12) * (this.isEnemy ? 1 : playerStats.damage);
+                        const range = this.weapon === 'knife' ? 60 : 50;
+                        const hitbox = { x: this.facing > 0 ? this.x + this.width : this.x - range, y: this.y, width: range, height: this.height };
+                        const target = this.isEnemy ? player : enemy;
+                        if (target && collision(hitbox, target)) {
+                            target.takeDamage(dmg, this);
+                            createParticles(target.x + target.width/2, target.y + target.height/2, '#c0c0c0', 8, 0.4); // Hit spark
+                        }
+                        this.cooldown = this.weapon === 'knife' ? 0.4 : 0.3;
+                    }
+                }
+
+                ultimate() {
+                    this.superMeter = 0;
+                    updateSuperBar(this);
+                    displayUltimateMove(this.weapon);
+                    const target = this.isEnemy ? player : enemy;
+                    if (target && Math.abs(target.x - this.x) < 400) {
+                        target.takeDamage(50, this, true);
+                    }
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x + this.width / 2, this.y);
+                    ctx.scale(this.facing, 1);
+
+                    const isBoss = this instanceof Boss;
+                    const skinColor = '#FFDBAC';
+                    const helmetColor = isBoss ? '#D4AF37' : '#556B2F';
+                    const vestColor = isBoss ? '#4B0082' : '#696969';
+                    const pantsColor = '#465362';
+                    
+                    // ANIMATION LOGIC
+                    let bob = 0; // for idle/walk breathing effect
+                    if (this.state === 'idle' || this.state === 'walk') {
+                       bob = Math.sin(Date.now() / (this.state === 'idle' ? 200 : 100)) * 2;
+                    }
+                    if (this.state === 'hurt') {
+                        const shake = Math.sin(Date.now() / 20) * 2;
+                        ctx.translate(shake, 0);
+                    }
+
+                    if (this.stunTimer > 0) ctx.globalAlpha = 0.5;
+                    if (this.isBlocking) {
+                        ctx.fillStyle = 'rgba(173, 216, 230, 0.5)';
+                        ctx.beginPath();
+                        ctx.arc(0, this.height / 2, this.width / 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    ctx.fillStyle = pantsColor; // Legs
+                    ctx.fillRect(-this.width / 2 + 5, this.height - 25, 10, 25);
+                    ctx.fillRect(this.width / 2 - 15, this.height - 25, 10, 25);
+
+                    ctx.fillStyle = vestColor; // Torso
+                    ctx.fillRect(-this.width / 2, 15 + bob, this.width, this.height - 30);
+
+                    ctx.fillStyle = skinColor; // Face
+                    ctx.fillRect(-10, 5 + bob, 20, 15);
+
+                    ctx.fillStyle = helmetColor; // Helmet
+                    ctx.beginPath();
+                    ctx.arc(0, 5 + bob, 12, Math.PI, 2 * Math.PI);
+                    ctx.fill();
+
+                    // Weapon Drawing based on state
+                    const armY = 25 + bob;
+                    if (this.state === 'attack') {
+                        const attackArc = Math.sin((this.frameTimer / 0.3) * Math.PI) * 20;
+                        this.frameTimer -= 1/60;
+                         switch (this.weapon) {
+                            case 'rifle': ctx.fillRect(5, armY - 5, 30, 5); break; // Thrust forward
+                            case 'knife': ctx.fillRect(5 + attackArc, armY, 15, 5); break; // Slash
+                            case 'fist': ctx.fillRect(5 + attackArc, armY, 10, 10); break; // Punch
+                        }
+                    } else { // Idle weapon pose
+                         switch (this.weapon) {
+                            case 'rifle': ctx.fillRect(5, armY, 30, 5); break;
+                            case 'knife': ctx.fillRect(5, armY, 15, 5); break;
+                            case 'fist': ctx.fillRect(5, armY, 10, 10); break;
+                        }
+                    }
+                    
+                    ctx.restore();
+                }
+
+                takeDamage(amount, attacker, isUltimate = false) {
+                    if (this.parryWindow > 0 && !isUltimate) {
+                        if(attacker) attacker.stunTimer = 1;
+                        return;
+                    }
+                    if (this.isBlocking && !isUltimate) amount *= 0.25;
+                    
+                    this.health -= amount;
+                    this.state = 'hurt';
+                    this.hurtTimer = 0.2;
+                    if (!isUltimate) this.superMeter += amount / 2;
+                    if(attacker) attacker.superMeter += amount;
+                    
+                    if (this.health <= 0) { 
+                        this.health = 0; 
+                        gameOver(attacker === player); 
+                    }
+                    
+                    updateHealthBar(this);
+                    updateSuperBar(this);
+                    if(attacker) updateSuperBar(attacker);
+                    
+                    if (attacker === player) {
+                        if (combo.target !== this || combo.timer <= 0) combo.count = 1; else combo.count++;
+                        combo.timer = 1.5; combo.target = this;
+                        showCombo();
+                    }
+                    screenShake(5);
+                }
+            }
+            
+            class Boss extends Player {
+                constructor(x, y, color, weapon) {
+                    super(x, y, color, weapon, true);
+                    this.baseHealth = 300 + gameState.level * 20;
+                    this.health = this.baseHealth; this.maxHealth = this.baseHealth;
+                    this.width = 50; this.height = 75;
+                }
+            }
+
+            // --- GAME LOGIC ---
+            function initGame() {
+                gameRunning = true;
+                projectiles = []; particles = []; combo.count = 0;
+                const isBossFight = !isRandomMode && gameState.fightInLevel > 2;
+                player = new Player(100, 200, '#4CAF50', selectedWeapon);
+                enemy = isBossFight ? new Boss(650, 200, '#F44336', 'rifle') : new Player(670, 200, '#F44336', 'rifle', true);
+                updateAllUI();
+                selectionScreen.style.display = 'none';
+                gameOverScreen.style.display = 'none';
+            }
+
+            function gameOver(playerWon) {
+                gameRunning = false;
+                winnerText.textContent = `${playerWon ? playerName : 'ENEMY'} Wins!`;
+                gameOverTitle.textContent = playerWon ? "MISSION SUCCESS" : "MISSION FAILED";
+                const points = playerWon ? (isRandomMode ? 20 * gameState.randomLevel : 100) : 10;
+                intelEarnedDisplay.textContent = points;
+                playerStats.intelPoints += points;
+                gameOverScreen.style.display = 'flex';
+            }
+
+            function setupNextFight() {
+                if (isRandomMode) {
+                    levelDisplay.textContent = `RANDOM FIGHT - LEVEL ${gameState.randomLevel}`;
+                } else {
+                    if (gameState.fightInLevel > 2) { gameState.level++; gameState.fightInLevel = 1; }
+                    const fightType = gameState.fightInLevel > 2 ? "BOSS FIGHT" : `FIGHT ${gameState.fightInLevel}`;
+                    levelDisplay.textContent = `LEVEL ${gameState.level} - ${fightType}`;
+                }
+                
+                homeScreen.style.display = 'none';
+                gameOverScreen.style.display = 'none';
+                barracksScreen.style.display = 'none';
+                selectionScreen.style.display = 'flex';
+                updateLocationButtons();
+            }
+
+            function updateAllUI() {
+                if(player) updateHealthBar(player);
+                if(enemy) updateHealthBar(enemy);
+                if(player) updateSuperBar(player);
+                if(enemy) updateSuperBar(enemy);
+            }
+
+            function updateHealthBar(target) {
+                if (!target) return;
+                const barContainer = target.isEnemy ? document.getElementById('enemy-health') : document.getElementById('player-health');
+                const bar = barContainer.querySelector('.health-fill');
+                const text = barContainer.querySelector('.health-text');
+                const name = target.isEnemy ? 'ENEMY' : playerName;
+                const percentage = (target.health / target.maxHealth) * 100;
+                bar.style.width = `${percentage}%`;
+                text.textContent = `${name}: ${Math.ceil(percentage)}%`;
+
+                if (!target.isEnemy) {
+                    if (percentage < 25) barContainer.classList.add('low-health');
+                    else barContainer.classList.remove('low-health');
+                }
+            }
+
+            function updateSuperBar(target) {
+                if (!target) return;
+                const bar = target.isEnemy ? enemySuperBar : playerSuperBar;
+                bar.style.width = `${Math.min(100, target.superMeter)}%`;
+            }
+
+            function createParticles(x, y, color, count, life) {
+                for(let i = 0; i < count; i++) {
+                    particles.push(new Particle(x, y, color, 5, life));
+                }
+            }
+
+            function showCombo() {
+                comboCounter.textContent = `${combo.count} HIT COMBO!`;
+                comboCounter.classList.add('active');
+                setTimeout(() => comboCounter.classList.remove('active'), 200);
+            }
+
+            function screenShake(intensity) {
+                const x = (Math.random() - 0.5) * intensity;
+                const y = (Math.random() - 0.5) * intensity;
+                gameContainer.style.transform = `translate(${x}px, ${y}px)`;
+                setTimeout(() => gameContainer.style.transform = '', 100);
+            }
+
+            function displayUltimateMove(weapon) {
+                const name = ultimateNames[weapon] || weapon.toUpperCase();
+                ultimateMoveDisplay.textContent = name;
+                ultimateMoveDisplay.style.transition = 'opacity 0.2s ease-in';
+                ultimateMoveDisplay.style.opacity = 1;
+                setTimeout(() => {
+                    ultimateMoveDisplay.style.transition = 'opacity 1s ease-out';
+                    ultimateMoveDisplay.style.opacity = 0;
+                }, 1000);
+            }
+            
+            function collision(rect1, rect2) { return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y; }
+
+            function drawBackground() {
+                const location = gameRunning ? currentLocation : 'home';
+                const bg = backgrounds[location];
+                ctx.fillStyle = bg.color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (gameRunning) {
+                    bg.layers.forEach(layer => {
+                        ctx.fillStyle = layer.color;
+                        const x = (parallaxOffset * layer.speed) % canvas.width;
+                        ctx.fillRect(x, layer.y, canvas.width, layer.height);
+                        ctx.fillRect(x - canvas.width, layer.y, canvas.width, layer.height);
+                    });
+                    ctx.fillStyle = bg.ground;
+                    ctx.fillRect(0, 350, canvas.width, 100);
+                }
+            }
+            
+            // --- MAIN GAME LOOP ---
+            function gameLoop(timestamp) {
+                const deltaTime = (timestamp - lastTime) / 1000 || 0;
+                lastTime = timestamp;
+                
+                if (gameRunning && player) {
+                    parallaxOffset -= (player.x - 400) * 0.1 * deltaTime; // Move parallax based on player deviation from center
+                }
+                
+                drawBackground();
+
+                if (gameRunning) {
+                    projectiles.forEach(p => p.update(deltaTime));
+                    particles.forEach((p, i) => { p.update(deltaTime); if (p.life <= 0) particles.splice(i, 1); });
+
+                    if (player) player.update(deltaTime);
+                    if (enemy) enemy.update(deltaTime);
+
+                    if (player) player.draw();
+                    if (enemy) enemy.draw();
+                    projectiles.forEach(p => p.draw());
+                    particles.forEach(p => p.draw());
+
+                    if (combo.timer > 0) { combo.timer -= deltaTime; if (combo.timer <= 0) combo.count = 0; }
+                    comboCounter.style.opacity = combo.count > 1 ? '1' : '0';
+                }
+                
+                requestAnimationFrame(gameLoop);
+            }
+
+            // --- UI & UPGRADES ---
+            function updateLocationButtons() {
+                locationSelectionContainer.innerHTML = '';
+                locations.forEach(loc => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn location-btn';
+                    btn.textContent = loc.toUpperCase();
+                    btn.dataset.location = loc;
+                    btn.onclick = () => {
+                        currentLocation = loc;
+                        document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                    };
+                    locationSelectionContainer.appendChild(btn);
+                });
+                document.querySelector(`.location-btn[data-location="${currentLocation}"]`).classList.add('selected');
+            }
+
+            function updateBarracksUI() {
+                intelPointsDisplay.textContent = playerStats.intelPoints;
+                healthLevelDisplay.textContent = playerStats.health;
+                damageLevelDisplay.textContent = playerStats.damage;
+                speedLevelDisplay.textContent = playerStats.speed;
+                upgradeHealthBtn.textContent = `Upgrade (${playerStats.health * 100} IP)`;
+                upgradeDamageBtn.textContent = `Upgrade (${playerStats.damage * 100} IP)`;
+                upgradeSpeedBtn.textContent = `Upgrade (${playerStats.speed * 100} IP)`;
+            }
+
+            // --- EVENT LISTENERS ---
+            playBtn.addEventListener('click', () => { isRandomMode = false; setupNextFight(); });
+            randomModeBtn.addEventListener('click', () => { isRandomMode = true; setupNextFight(); });
+            startBtn.addEventListener('click', initGame);
+            nextLevelBtn.addEventListener('click', () => {
+                if (isRandomMode) gameState.randomLevel++; else gameState.fightInLevel++;
+                setupNextFight();
+            });
+            mainMenuBtn.addEventListener('click', () => { gameOverScreen.style.display = 'none'; homeScreen.style.display = 'flex'; });
+            backToHomeBtn.addEventListener('click', () => { selectionScreen.style.display = 'none'; homeScreen.style.display = 'flex'; });
+            barracksBtn.addEventListener('click', () => { homeScreen.style.display = 'none'; barracksScreen.style.display = 'flex'; updateBarracksUI(); });
+            backToHomeFromBarracksBtn.addEventListener('click', () => { barracksScreen.style.display = 'none'; homeScreen.style.display = 'flex'; });
+
+            upgradeHealthBtn.addEventListener('click', () => {
+                const cost = playerStats.health * 100;
+                if (playerStats.intelPoints >= cost) { playerStats.intelPoints -= cost; playerStats.health++; updateBarracksUI(); }
+            });
+            upgradeDamageBtn.addEventListener('click', () => {
+                const cost = playerStats.damage * 100;
+                if (playerStats.intelPoints >= cost) { playerStats.intelPoints -= cost; playerStats.damage++; updateBarracksUI(); }
+            });
+            upgradeSpeedBtn.addEventListener('click', () => {
+                const cost = playerStats.speed * 100;
+                if (playerStats.intelPoints >= cost) { playerStats.intelPoints -= cost; playerStats.speed++; updateBarracksUI(); }
+            });
+            
+            weaponBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    weaponBtns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedWeapon = btn.dataset.weapon;
+                });
+            });
+
+            playerNameInput.addEventListener('input', (e) => {
+                playerName = e.target.value ? e.target.value.toUpperCase() : "PLAYER";
+                updateHealthBar(player);
+            });
+            
+            // --- INITIALIZATION ---
+            function initialize() {
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
+            }
+            initialize();
+        });
+    </script>
+</body>
+</html>
+
