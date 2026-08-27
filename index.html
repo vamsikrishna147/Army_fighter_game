@@ -3,329 +3,709 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#05070c">
+    <meta name="description" content="Army Fighters 1v1 - a fast-paced side-scrolling fighting game built with pure HTML, CSS and JavaScript.">
     <title>Army Fighters 1v1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bg-deep: #05070c;
+            --bg-panel: rgba(14, 19, 28, 0.72);
+            --stroke: rgba(255, 255, 255, 0.09);
+            --stroke-strong: rgba(255, 255, 255, 0.18);
+            --accent: #ff7a18;
+            --accent-2: #ffb703;
+            --ally: #35e07f;
+            --hostile: #ff3b5c;
+            --super: #38e8ff;
+            --text: #eef2f8;
+            --text-dim: rgba(238, 242, 248, 0.62);
+            --radius: 18px;
+            --font-display: 'Orbitron', 'Segoe UI', Tahoma, sans-serif;
+            --font-ui: 'Rajdhani', 'Segoe UI', Tahoma, sans-serif;
+            --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.65);
         }
-        
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
         body {
-            background: #111;
+            background: var(--bg-deep);
+            color: var(--text);
+            font-family: var(--font-ui);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
-        }
-        
-        #game-container {
-            position: relative;
-            width: 900px;
-            height: 500px;
-            border: 4px solid #555;
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
-            overflow: auto;
-            transition: transform 0.1s ease-out;
-        }
-        
-        #game-canvas {
-            background-color: #0d1b2a;
-            width: 100%;
-            height: 100%;
-        }
-        
-        #ui-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .health-bar, .super-meter {
-            position: absolute;
-            top: 20px;
-            height: 25px;
-            width: 300px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 2px solid #fff;
-            border-radius: 5px;
-            overflow: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            -webkit-font-smoothing: antialiased;
         }
 
-        .super-meter {
-            top: 50px;
-            height: 15px;
+        /* Ambient animated backdrop */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: -20%;
+            background:
+                radial-gradient(38vw 38vw at 18% 22%, rgba(255, 122, 24, 0.20), transparent 60%),
+                radial-gradient(42vw 42vw at 82% 78%, rgba(56, 232, 255, 0.16), transparent 62%),
+                radial-gradient(50vw 50vw at 50% 50%, rgba(53, 224, 127, 0.08), transparent 65%);
+            filter: blur(10px);
+            animation: drift 24s ease-in-out infinite alternate;
+            pointer-events: none;
         }
-        
-        #player-health { left: 20px; }
-        #enemy-health { right: 20px; }
-        #player-super-meter { left: 20px; }
-        #enemy-super-meter { right: 20px; }
-        
+
+        /* Faint tactical grid + vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 44px 44px,
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 44px 44px,
+                radial-gradient(120% 100% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
+            pointer-events: none;
+        }
+
+        @keyframes drift {
+            from { transform: translate3d(-2%, -1%, 0) scale(1); }
+            to   { transform: translate3d(2%, 2%, 0) scale(1.08); }
+        }
+
+        #stage {
+            position: relative;
+            z-index: 1;
+            width: min(94vw, 1040px);
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: #0a0f18;
+            border: 1px solid var(--stroke-strong);
+            box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+            transition: transform 0.08s ease-out;
+        }
+
+        /* Glow frame */
+        #stage::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: calc(var(--radius) + 2px);
+            background: linear-gradient(120deg, rgba(255, 122, 24, 0.55), rgba(56, 232, 255, 0.45), rgba(255, 122, 24, 0.55));
+            background-size: 300% 300%;
+            filter: blur(14px);
+            opacity: 0.45;
+            animation: sheen 12s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes sheen {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #0d1b2a;
+            image-rendering: auto;
+        }
+
+        /* Scanlines / screen sheen over the canvas */
+        #screen-fx {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            background:
+                repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
+                radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+            mix-blend-mode: soft-light;
+        }
+
+        #ui-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+            padding: 18px 20px;
+            font-family: var(--font-ui);
+        }
+
+        /* ---------- HUD ---------- */
+        .hud-side {
+            position: absolute;
+            top: 18px;
+            width: min(38%, 340px);
+        }
+        #player-hud { left: 20px; }
+        #enemy-hud { right: 20px; }
+        #enemy-hud .hud-tag { flex-direction: row-reverse; }
+        #enemy-hud .hud-name, #enemy-hud .hud-role { text-align: right; }
+
+        .hud-tag {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .hud-name {
+            flex: 1;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 0.14em;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .hud-role {
+            font-size: 11px;
+            letter-spacing: 0.22em;
+            font-weight: 700;
+            color: var(--text-dim);
+        }
+
+        .health-bar {
+            position: relative;
+            height: 20px;
+            background: rgba(6, 10, 16, 0.72);
+            border: 1px solid var(--stroke-strong);
+            border-radius: 6px;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: skewX(-14deg);
+        }
+
+        .health-bar > * { transform: skewX(14deg); }
+
         .health-fill, .super-fill {
             height: 100%;
             width: 100%;
-            transition: width 0.2s linear;
+            transform-origin: left center;
+            transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        
-        #player-health .health-fill { 
-            background: linear-gradient(to right, #4CAF50, #8BC34A);
-            box-shadow: 0 0 10px #4CAF50, inset 0 0 5px rgba(255,255,255,0.3);
+        #enemy-hud .health-fill, #enemy-hud .super-fill {
+            margin-left: auto;
+            transform-origin: right center;
         }
-        #enemy-health .health-fill { background: linear-gradient(to right, #F44336, #E57373); }
-        #player-super-meter .super-fill { background: linear-gradient(to right, #00BCD4, #80DEEA); }
-        #enemy-super-meter .super-fill { background: linear-gradient(to right, #FFC107, #FFD54F); }
-        
+
+        #player-hud .health-fill {
+            background: linear-gradient(90deg, #17b45f, var(--ally));
+            box-shadow: 0 0 18px rgba(53, 224, 127, 0.55), inset 0 0 8px rgba(255, 255, 255, 0.25);
+        }
+        #enemy-hud .health-fill {
+            background: linear-gradient(270deg, #b3122f, var(--hostile));
+            box-shadow: 0 0 18px rgba(255, 59, 92, 0.5), inset 0 0 8px rgba(255, 255, 255, 0.25);
+        }
+
         .health-text {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px black;
+            transform: translate(-50%, -50%) skewX(14deg);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+            white-space: nowrap;
         }
 
-        .low-health {
-            animation: pulse-red 1s infinite;
+        .super-meter {
+            position: relative;
+            margin-top: 6px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(6, 10, 16, 0.72);
+            border: 1px solid var(--stroke);
+            overflow: hidden;
+        }
+        #player-hud .super-fill { background: linear-gradient(90deg, #0f8fb0, var(--super)); box-shadow: 0 0 14px rgba(56, 232, 255, 0.6); }
+        #enemy-hud .super-fill { background: linear-gradient(270deg, #d08a00, var(--accent-2)); box-shadow: 0 0 14px rgba(255, 183, 3, 0.55); }
+
+        .low-health .health-fill { animation: pulse-danger 0.9s ease-in-out infinite; }
+
+        @keyframes pulse-danger {
+            0%, 100% { filter: brightness(1); box-shadow: 0 0 16px rgba(255, 59, 92, 0.5); }
+            50% { filter: brightness(1.5); box-shadow: 0 0 30px rgba(255, 59, 92, 0.95); }
         }
 
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 10px #F44336, inset 0 0 5px rgba(255,255,255,0.3); }
-            50% { box-shadow: 0 0 20px #E57373, inset 0 0 10px rgba(255,255,255,0.5); }
-            100% { box-shadow: 0 0 10px #F44336, inset 0 0 5px rgba(255,255,255,0.3); }
-        }
-        
         #score {
             position: absolute;
-            top: 20px;
+            top: 18px;
             left: 50%;
             transform: translateX(-50%);
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            padding: 6px 18px;
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.28em;
+            background: rgba(6, 10, 16, 0.6);
+            border: 1px solid var(--stroke-strong);
+            border-radius: 999px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-        
+
         #combo-counter {
             position: absolute;
-            top: 80px;
+            top: 92px;
             left: 50%;
-            transform: translateX(-50%);
-            color: #ffc107;
-            font-size: 32px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            font-family: var(--font-display);
+            font-size: clamp(20px, 3vw, 34px);
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            background: linear-gradient(180deg, #fff6d8, var(--accent-2) 55%, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 6px 16px rgba(255, 122, 24, 0.55));
             opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-            transform-origin: bottom;
+            transform: translateX(-50%);
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
-        #combo-counter.active {
-            opacity: 1;
-            transform: translateX(-50%) scale(1.2);
-        }
-        
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            z-index: 100;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-            transition: opacity 0.5s ease-in-out;
-        }
-        
-        #home-screen {
-            background-image: url('https://placehold.co/800x450/2c5d3c/FFFFFF?text=Mountain+Camp');
-            background-size: cover;
-        }
-
-        #selection-screen {
-            background: linear-gradient(to bottom, #004e92, #000428);
-            display: none;
-        }
-        
-        #barracks-screen {
-            background: linear-gradient(to bottom, #424242, #212121);
-            display: none;
-        }
-        
-        h1 {
-            font-size: 52px;
-            margin-bottom: 5px;
-            color: #ff8800;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            background: linear-gradient(to bottom, #ff8800, #ff5500);
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            pointer-events: auto;
-        }
-
-        .btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .btn:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(to bottom, #ff9900, #ff6600);
-        }
-        
-        .location-btn, .weapon-btn {
-            width: 150px;
-            text-align: center;
-            border: 2px solid transparent;
-        }
-        .location-btn.selected, .weapon-btn.selected {
-            border-color: #fdbb2d;
-            box-shadow: 0 0 15px #fdbb2d;
-        }
-        
-        .selection-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 5px;
-            flex-wrap: wrap;
-        }
-        
-        #player-name-input {
-            padding: 10px;
-            border-radius: 20px;
-            border: 2px solid #ff8800;
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 18px;
-            text-align: center;
-            margin: 15px 0;
-            pointer-events: auto;
-            outline: none;
-        }
-
-        .upgrade-container {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            max-width: 600px;
-            margin: 20px 0;
-        }
-
-        .upgrade-item {
-            text-align: center;
-        }
+        #combo-counter.active { opacity: 1; transform: translateX(-50%) scale(1.22) rotate(-2deg); }
 
         #ultimate-move-display {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 60px;
-            color: #ffc107;
-            font-weight: bold;
-            text-shadow: 3px 3px 8px black;
+            font-family: var(--font-display);
+            font-size: clamp(34px, 7vw, 74px);
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            background: linear-gradient(180deg, #fff, var(--accent-2) 45%, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 10px 30px rgba(255, 122, 24, 0.7));
             opacity: 0;
-            z-index: 200;
+            z-index: 20;
             pointer-events: none;
+        }
+
+        /* ---------- SCREENS ---------- */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 28px;
+            text-align: center;
+            color: var(--text);
+            z-index: 100;
+            background:
+                radial-gradient(90% 80% at 50% 20%, rgba(255, 122, 24, 0.10), transparent 60%),
+                linear-gradient(180deg, rgba(5, 7, 12, 0.82), rgba(5, 7, 12, 0.94));
+            backdrop-filter: blur(14px) saturate(120%);
+            animation: screen-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: auto;
+        }
+
+        @keyframes screen-in {
+            from { opacity: 0; transform: scale(1.03); filter: blur(6px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+
+        .screen > * { animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+        .screen > *:nth-child(1) { animation-delay: 0.04s; }
+        .screen > *:nth-child(2) { animation-delay: 0.09s; }
+        .screen > *:nth-child(3) { animation-delay: 0.14s; }
+        .screen > *:nth-child(4) { animation-delay: 0.18s; }
+        .screen > *:nth-child(5) { animation-delay: 0.22s; }
+        .screen > *:nth-child(6) { animation-delay: 0.26s; }
+        .screen > *:nth-child(7) { animation-delay: 0.3s; }
+
+        @keyframes rise-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #selection-screen, #barracks-screen, #game-over-screen { display: none; }
+
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.42em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(30px, 5.4vw, 58px);
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            line-height: 1.05;
+            background: linear-gradient(180deg, #ffffff 10%, #ffd7a8 45%, var(--accent) 95%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 12px 34px rgba(255, 122, 24, 0.45));
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: clamp(20px, 3.2vw, 32px);
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 14px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .divider {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 10px 0 2px;
+        }
+
+        /* ---------- BUTTONS ---------- */
+        .btn {
+            position: relative;
+            padding: 11px 24px;
+            margin: 5px;
+            font-family: var(--font-ui);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #14100a;
+            background: linear-gradient(180deg, var(--accent-2), var(--accent));
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 999px;
+            cursor: pointer;
+            overflow: hidden;
+            pointer-events: auto;
+            transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
+            box-shadow: 0 10px 24px rgba(255, 122, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -140%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.55s ease;
+        }
+        .btn:hover:not(:disabled)::after { left: 140%; }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(255, 122, 24, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+            filter: brightness(1.06);
+        }
+        .btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+        .btn:focus-visible { outline: 2px solid var(--super); outline-offset: 3px; }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-dim);
+            border-color: var(--stroke);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn.ghost {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            border: 1px solid var(--stroke-strong);
+            box-shadow: none;
+        }
+        .btn.ghost:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
+        }
+
+        /* Chip-style selectors (locations + weapons) */
+        .location-btn, .weapon-btn {
+            min-width: 118px;
+            padding: 9px 16px;
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        .location-btn:hover:not(.selected), .weapon-btn:hover:not(.selected) {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+        }
+        .location-btn.selected, .weapon-btn.selected {
+            color: #14100a;
+            background: linear-gradient(180deg, var(--accent-2), var(--accent));
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 1px rgba(255, 183, 3, 0.4), 0 12px 28px rgba(255, 122, 24, 0.4);
+        }
+
+        .selection-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            max-width: 760px;
+        }
+
+        #player-name-input {
+            width: min(320px, 80%);
+            padding: 12px 18px;
+            margin: 14px 0 6px;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-align: center;
+            text-transform: uppercase;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--stroke-strong);
+            border-radius: 999px;
+            outline: none;
+            pointer-events: auto;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        #player-name-input::placeholder { color: rgba(238, 242, 248, 0.35); letter-spacing: 0.12em; }
+        #player-name-input:focus {
+            border-color: var(--accent);
+            background: rgba(255, 122, 24, 0.08);
+            box-shadow: 0 0 0 4px rgba(255, 122, 24, 0.18);
+        }
+
+        /* ---------- BARRACKS ---------- */
+        .upgrade-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            width: 100%;
+            max-width: 680px;
+            margin: 18px 0;
+        }
+
+        .upgrade-item {
+            flex: 1 1 170px;
+            padding: 16px 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            box-shadow: 0 20px 44px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .upgrade-item:hover { transform: translateY(-3px); border-color: rgba(255, 122, 24, 0.45); }
+        .upgrade-item p {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            margin-bottom: 10px;
+        }
+        .upgrade-item .btn { font-size: 12px; padding: 9px 16px; }
+
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-2);
+            background: rgba(255, 183, 3, 0.1);
+            border: 1px solid rgba(255, 183, 3, 0.32);
+            border-radius: 999px;
+        }
+
+        /* ---------- CONTROLS HINT ---------- */
+        .controls-hint {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 18px;
+            color: var(--text-dim);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+        .controls-hint span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        kbd {
+            display: inline-block;
+            min-width: 22px;
+            padding: 3px 7px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--stroke-strong);
+            border-bottom-width: 2px;
+            border-radius: 6px;
+        }
+
+        #winner-text {
+            font-family: var(--font-display);
+            font-size: clamp(16px, 2.6vw, 24px);
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            color: var(--accent-2);
+        }
+
+        #game-over-title.failed {
+            background: linear-gradient(180deg, #fff, #ff8fa3 50%, var(--hostile));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .brand-footer {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+            color: rgba(238, 242, 248, 0.28);
+        }
+
+        @media (max-width: 640px) {
+            .hud-side { width: 44%; }
+            .health-text { font-size: 10px; }
+            #score { font-size: 10px; letter-spacing: 0.2em; }
+            .btn { padding: 9px 16px; font-size: 12px; }
+            .location-btn, .weapon-btn { min-width: 96px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         }
     </style>
 </head>
 <body>
+    <div id="stage">
     <div id="game-container">
         <canvas id="game-canvas" width="800" height="450"></canvas>
-        
+        <div id="screen-fx"></div>
+
         <div id="ui-container">
-            <div id="player-health" class="health-bar"><div class="health-fill"></div><div class="health-text">PLAYER: 100%</div></div>
-            <div id="enemy-health" class="health-bar"><div class="health-fill"></div><div class="health-text">ENEMY: 100%</div></div>
-            <div id="player-super-meter" class="super-meter"><div class="super-fill"></div></div>
-            <div id="enemy-super-meter" class="super-meter"><div class="super-fill"></div></div>
+            <div id="player-hud" class="hud-side">
+                <div class="hud-tag"><span class="hud-name">PLAYER</span><span class="hud-role">Ally</span></div>
+                <div id="player-health" class="health-bar"><div class="health-fill"></div><div class="health-text">100%</div></div>
+                <div id="player-super-meter" class="super-meter"><div class="super-fill"></div></div>
+            </div>
+            <div id="enemy-hud" class="hud-side">
+                <div class="hud-tag"><span class="hud-name">ENEMY</span><span class="hud-role">Hostile</span></div>
+                <div id="enemy-health" class="health-bar"><div class="health-fill"></div><div class="health-text">100%</div></div>
+                <div id="enemy-super-meter" class="super-meter"><div class="super-fill"></div></div>
+            </div>
             <div id="score">FIGHT!</div>
             <div id="combo-counter"></div>
             <div id="ultimate-move-display"></div>
         </div>
-        
+
         <div id="home-screen" class="screen">
+            <p class="eyebrow">Tactical Combat Simulator</p>
             <h1>ARMY FIGHTERS 1v1</h1>
-            <p>Enter your callsign, soldier.</p>
-            <input type="text" id="player-name-input" placeholder="Type your name..." maxlength="12">
-            <button id="play-btn" class="btn">CAMPAIGN</button>
-            <button id="random-mode-btn" class="btn">RANDOM FIGHT</button>
-            <button id="barracks-btn" class="btn">BARRACKS</button>
+            <div class="divider"></div>
+            <p class="subtitle">Enter your callsign, soldier</p>
+            <input type="text" id="player-name-input" placeholder="Type your name..." maxlength="12" autocomplete="off" spellcheck="false">
+            <div class="selection-container">
+                <button id="play-btn" class="btn">Campaign</button>
+                <button id="random-mode-btn" class="btn ghost">Random Fight</button>
+                <button id="barracks-btn" class="btn ghost">Barracks</button>
+            </div>
+            <div class="controls-hint">
+                <span><kbd>A</kbd><kbd>D</kbd> Move</span>
+                <span><kbd>W</kbd> Jump</span>
+                <span><kbd>Space</kbd> Attack</span>
+                <span><kbd>Shift</kbd> Block / Parry</span>
+                <span><kbd>Q</kbd> Ultimate</span>
+            </div>
         </div>
 
         <div id="barracks-screen" class="screen">
-            <h2>BARRACKS</h2>
-            <p>Intel Points: <span id="intel-points-display">0</span></p>
+            <p class="eyebrow">Loadout &amp; Progression</p>
+            <h2>Barracks</h2>
+            <div class="stat-pill">Intel Points: <span id="intel-points-display">0</span></div>
             <div class="upgrade-container">
                 <div class="upgrade-item">
-                    <p>HEALTH (<span id="health-level">1</span>)</p>
+                    <p>Health <span id="health-level">1</span></p>
                     <button id="upgrade-health-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
                 <div class="upgrade-item">
-                    <p>DAMAGE (<span id="damage-level">1</span>)</p>
+                    <p>Damage <span id="damage-level">1</span></p>
                     <button id="upgrade-damage-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
                 <div class="upgrade-item">
-                    <p>SPEED (<span id="speed-level">1</span>)</p>
+                    <p>Speed <span id="speed-level">1</span></p>
                     <button id="upgrade-speed-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
             </div>
-            <button id="back-to-home-from-barracks-btn" class="btn">Back to Home</button>
+            <button id="back-to-home-from-barracks-btn" class="btn ghost">Back to Home</button>
         </div>
 
         <div id="selection-screen" class="screen">
+            <p class="eyebrow">Mission Briefing</p>
             <h2 id="level-display">LEVEL 1 - FIGHT 1</h2>
-            <p><strong>BATTLEFIELD</strong></p>
+            <p class="subtitle">Battlefield</p>
             <div id="location-selection-container" class="selection-container"></div>
-            <p><strong>WEAPON LOADOUT</strong></p>
+            <p class="subtitle">Weapon Loadout</p>
             <div class="selection-container">
-                <button class="btn weapon-btn selected" data-weapon="rifle">RIFLE</button>
-                <button class="btn weapon-btn" data-weapon="knife">KNIFE</button>
-                <button class="btn weapon-btn" data-weapon="fist">FISTS</button>
+                <button class="btn weapon-btn selected" data-weapon="rifle">Rifle</button>
+                <button class="btn weapon-btn" data-weapon="knife">Knife</button>
+                <button class="btn weapon-btn" data-weapon="fist">Fists</button>
             </div>
             <div class="selection-container">
-                <button id="start-btn" class="btn">START MISSION</button>
-                <button id="back-to-home-btn" class="btn">Back to Home</button>
+                <button id="start-btn" class="btn">Start Mission</button>
+                <button id="back-to-home-btn" class="btn ghost">Back to Home</button>
             </div>
         </div>
-        
+
         <div id="game-over-screen" class="screen">
-            <h2 id="game-over-title">MISSION SUCCESS</h2>
+            <p class="eyebrow">Debrief</p>
+            <h2 id="game-over-title">Mission Success</h2>
             <div id="winner-text"></div>
-            <p>Intel Points Earned: <span id="intel-earned-display">0</span></p>
-            <button id="next-level-btn" class="btn">NEXT LEVEL</button>
-            <button id="main-menu-btn" class="btn">MAIN MENU</button>
+            <div class="stat-pill">Intel Earned: <span id="intel-earned-display">0</span></div>
+            <div class="selection-container">
+                <button id="next-level-btn" class="btn">Next Level</button>
+                <button id="main-menu-btn" class="btn ghost">Main Menu</button>
+            </div>
         </div>
+    </div>
+    <p class="brand-footer">HTML5 &middot; Canvas &middot; Vanilla JS</p>
     </div>
 
     <script>
@@ -590,6 +970,17 @@
                 }
 
                 draw() {
+                    // Contact shadow, softened as the fighter leaves the ground
+                    const groundY = canvas.height - 100;
+                    const airborne = Math.min(Math.max(groundY - (this.y + this.height), 0) / 160, 0.65);
+                    ctx.save();
+                    ctx.globalAlpha = 0.32 * (1 - airborne);
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.ellipse(this.x + this.width / 2, groundY + 2, this.width * 0.55 * (1 - airborne * 0.5), 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
                     ctx.save();
                     ctx.translate(this.x + this.width / 2, this.y);
                     ctx.scale(this.facing, 1);
@@ -612,12 +1003,20 @@
 
                     if (this.stunTimer > 0) ctx.globalAlpha = 0.5;
                     if (this.isBlocking) {
-                        ctx.fillStyle = 'rgba(173, 216, 230, 0.5)';
+                        const shield = ctx.createRadialGradient(0, this.height / 2, 4, 0, this.height / 2, this.width / 1.4);
+                        shield.addColorStop(0, 'rgba(173, 230, 255, 0.10)');
+                        shield.addColorStop(0.75, 'rgba(120, 210, 255, 0.35)');
+                        shield.addColorStop(1, 'rgba(56, 232, 255, 0.75)');
+                        ctx.fillStyle = shield;
                         ctx.beginPath();
-                        ctx.arc(0, this.height / 2, this.width / 1.5, 0, Math.PI * 2);
+                        ctx.arc(0, this.height / 2, this.width / 1.4, 0, Math.PI * 2);
                         ctx.fill();
                     }
-                    
+
+                    // Team-coloured rim light
+                    ctx.shadowColor = this.hurtTimer > 0 ? '#ffffff' : this.color;
+                    ctx.shadowBlur = this.hurtTimer > 0 ? 22 : 12;
+
                     ctx.fillStyle = pantsColor; // Legs
                     ctx.fillRect(-this.width / 2 + 5, this.height - 25, 10, 25);
                     ctx.fillRect(this.width / 2 - 15, this.height - 25, 10, 25);
@@ -633,8 +1032,19 @@
                     ctx.arc(0, 5 + bob, 12, Math.PI, 2 * Math.PI);
                     ctx.fill();
 
+                    ctx.shadowBlur = 0;
+
+                    // Gear detailing: vest strap + helmet highlight
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+                    ctx.fillRect(-this.width / 2, 24 + bob, this.width, 4);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+                    ctx.fillRect(-this.width / 2, 15 + bob, this.width, 2);
+                    ctx.fillStyle = isBoss ? '#ffe9a3' : '#8fa05f';
+                    ctx.fillRect(-11, -1 + bob, 22, 2);
+
                     // Weapon Drawing based on state
                     const armY = 25 + bob;
+                    ctx.fillStyle = this.weapon === 'fist' ? skinColor : '#cfd6dd';
                     if (this.state === 'attack') {
                         const attackArc = Math.sin((this.frameTimer / 0.3) * Math.PI) * 20;
                         this.frameTimer -= 1/60;
@@ -710,6 +1120,8 @@
                 gameRunning = false;
                 winnerText.textContent = `${playerWon ? playerName : 'ENEMY'} Wins!`;
                 gameOverTitle.textContent = playerWon ? "MISSION SUCCESS" : "MISSION FAILED";
+                gameOverTitle.classList.toggle('failed', !playerWon);
+                nextLevelBtn.textContent = playerWon ? 'NEXT LEVEL' : 'RETRY';
                 const points = playerWon ? (isRandomMode ? 20 * gameState.randomLevel : 100) : 10;
                 intelEarnedDisplay.textContent = points;
                 playerStats.intelPoints += points;
@@ -744,15 +1156,15 @@
                 const barContainer = target.isEnemy ? document.getElementById('enemy-health') : document.getElementById('player-health');
                 const bar = barContainer.querySelector('.health-fill');
                 const text = barContainer.querySelector('.health-text');
+                const nameLabel = barContainer.parentElement.querySelector('.hud-name');
                 const name = target.isEnemy ? 'ENEMY' : playerName;
-                const percentage = (target.health / target.maxHealth) * 100;
+                const percentage = Math.max(0, (target.health / target.maxHealth) * 100);
                 bar.style.width = `${percentage}%`;
-                text.textContent = `${name}: ${Math.ceil(percentage)}%`;
+                if (nameLabel) nameLabel.textContent = name;
+                text.textContent = `${Math.ceil(percentage)}%`;
 
-                if (!target.isEnemy) {
-                    if (percentage < 25) barContainer.classList.add('low-health');
-                    else barContainer.classList.remove('low-health');
-                }
+                if (percentage < 25) barContainer.classList.add('low-health');
+                else barContainer.classList.remove('low-health');
             }
 
             function updateSuperBar(target) {
@@ -793,21 +1205,85 @@
             
             function collision(rect1, rect2) { return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y; }
 
+            // Lighten (amount > 0) or darken (amount < 0) a hex color.
+            function shade(hex, amount) {
+                const num = parseInt(hex.slice(1), 16);
+                const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+                const r = clamp(((num >> 16) & 255) + amount);
+                const g = clamp(((num >> 8) & 255) + amount);
+                const b = clamp((num & 255) + amount);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
             function drawBackground() {
                 const location = gameRunning ? currentLocation : 'home';
                 const bg = backgrounds[location];
-                ctx.fillStyle = bg.color;
+
+                const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                sky.addColorStop(0, shade(bg.color, 34));
+                sky.addColorStop(0.55, bg.color);
+                sky.addColorStop(1, shade(bg.color, -26));
+                ctx.fillStyle = sky;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+                // Soft sun / light source
+                const glow = ctx.createRadialGradient(620, 70, 6, 620, 70, 150);
+                glow.addColorStop(0, 'rgba(255, 250, 232, 0.45)');
+                glow.addColorStop(0.3, 'rgba(255, 232, 186, 0.12)');
+                glow.addColorStop(1, 'rgba(255, 232, 186, 0)');
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, canvas.width, 340);
+
                 if (gameRunning) {
-                    bg.layers.forEach(layer => {
-                        ctx.fillStyle = layer.color;
+                    bg.layers.forEach((layer, i) => {
+                        const grad = ctx.createLinearGradient(0, layer.y, 0, layer.y + layer.height);
+                        grad.addColorStop(0, shade(layer.color, 12));
+                        grad.addColorStop(1, shade(layer.color, -22));
+                        ctx.save();
+                        ctx.globalAlpha = 0.78 + i * 0.12;
+                        ctx.fillStyle = grad;
                         const x = (parallaxOffset * layer.speed) % canvas.width;
                         ctx.fillRect(x, layer.y, canvas.width, layer.height);
                         ctx.fillRect(x - canvas.width, layer.y, canvas.width, layer.height);
+                        ctx.restore();
                     });
-                    ctx.fillStyle = bg.ground;
+
+                    const ground = ctx.createLinearGradient(0, 350, 0, canvas.height);
+                    ground.addColorStop(0, shade(bg.ground, 16));
+                    ground.addColorStop(0.25, bg.ground);
+                    ground.addColorStop(1, shade(bg.ground, -34));
+                    ctx.fillStyle = ground;
                     ctx.fillRect(0, 350, canvas.width, 100);
+
+                    // Horizon highlight
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+                    ctx.fillRect(0, 350, canvas.width, 2);
+
+                    // Atmospheric haze above the ground line
+                    const haze = ctx.createLinearGradient(0, 300, 0, 352);
+                    haze.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                    haze.addColorStop(1, 'rgba(255, 255, 255, 0.08)');
+                    ctx.fillStyle = haze;
+                    ctx.fillRect(0, 300, canvas.width, 52);
+                }
+            }
+
+            // Vignette + colour grade drawn on top of the scene.
+            function drawAtmosphere() {
+                const cx = canvas.width / 2, cy = canvas.height / 2;
+                const vignette = ctx.createRadialGradient(cx, cy, canvas.height * 0.32, cx, cy, canvas.height * 0.95);
+                vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                vignette.addColorStop(1, 'rgba(2, 4, 8, 0.55)');
+                ctx.fillStyle = vignette;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (player && player.health / player.maxHealth < 0.25) {
+                    const pulse = 0.18 + Math.sin(Date.now() / 260) * 0.08;
+                    const danger = ctx.createRadialGradient(cx, cy, canvas.height * 0.3, cx, cy, canvas.height);
+                    danger.addColorStop(0, 'rgba(255, 59, 92, 0)');
+                    danger.addColorStop(1, `rgba(255, 59, 92, ${pulse})`);
+                    ctx.fillStyle = danger;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
             }
             
@@ -833,6 +1309,7 @@
                     if (enemy) enemy.draw();
                     projectiles.forEach(p => p.draw());
                     particles.forEach(p => p.draw());
+                    drawAtmosphere();
 
                     if (combo.timer > 0) { combo.timer -= deltaTime; if (combo.timer <= 0) combo.count = 0; }
                     comboCounter.style.opacity = combo.count > 1 ? '1' : '0';
@@ -864,9 +1341,16 @@
                 healthLevelDisplay.textContent = playerStats.health;
                 damageLevelDisplay.textContent = playerStats.damage;
                 speedLevelDisplay.textContent = playerStats.speed;
-                upgradeHealthBtn.textContent = `Upgrade (${playerStats.health * 100} IP)`;
-                upgradeDamageBtn.textContent = `Upgrade (${playerStats.damage * 100} IP)`;
-                upgradeSpeedBtn.textContent = `Upgrade (${playerStats.speed * 100} IP)`;
+                const upgrades = [
+                    [upgradeHealthBtn, playerStats.health],
+                    [upgradeDamageBtn, playerStats.damage],
+                    [upgradeSpeedBtn, playerStats.speed]
+                ];
+                upgrades.forEach(([btn, level]) => {
+                    const cost = level * 100;
+                    btn.textContent = `Upgrade (${cost} IP)`;
+                    btn.disabled = playerStats.intelPoints < cost;
+                });
             }
 
             // --- EVENT LISTENERS ---
