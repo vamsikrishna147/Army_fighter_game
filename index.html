@@ -173,6 +173,7 @@
             font-size: 11px;
             letter-spacing: 0.22em;
             font-weight: 700;
+            text-transform: uppercase;
             color: var(--text-dim);
         }
 
@@ -234,6 +235,33 @@
         }
         #player-hud .super-fill { background: linear-gradient(90deg, #0f8fb0, var(--super)); box-shadow: 0 0 14px rgba(56, 232, 255, 0.6); }
         #enemy-hud .super-fill { background: linear-gradient(270deg, #d08a00, var(--accent-2)); box-shadow: 0 0 14px rgba(255, 183, 3, 0.55); }
+
+        .super-meter.ready { border-color: rgba(56, 232, 255, 0.6); }
+        .super-meter.ready .super-fill { animation: super-sweep 1.4s ease-in-out infinite; }
+
+        @keyframes super-sweep {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.6); }
+        }
+
+        .ult-flag {
+            position: absolute;
+            top: 100%;
+            margin-top: 6px;
+            padding: 2px 9px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            color: #04222b;
+            background: var(--super);
+            border-radius: 999px;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        #player-hud .ult-flag { left: 0; }
+        #enemy-hud .ult-flag { right: 0; background: var(--accent-2); color: #241800; }
+        .hud-side.ult-ready .ult-flag { opacity: 1; transform: translateY(0); }
 
         .low-health .health-fill { animation: pulse-danger 0.9s ease-in-out infinite; }
 
@@ -443,18 +471,163 @@
             box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
         }
 
-        /* Chip-style selectors (locations + weapons) */
-        .location-btn, .weapon-btn {
-            min-width: 118px;
-            padding: 9px 16px;
-            font-size: 12px;
-            letter-spacing: 0.18em;
+        /* ---------- MODE CARDS (home) ---------- */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 620px;
+            margin-top: 6px;
+        }
+
+        .mode-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 14px 16px;
+            text-align: left;
             color: var(--text);
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-panel);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            cursor: pointer;
+            pointer-events: auto;
+            font-family: var(--font-ui);
+            box-shadow: 0 18px 38px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+        .mode-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 122, 24, 0.5);
+            background: rgba(255, 122, 24, 0.08);
+            box-shadow: 0 22px 46px rgba(0, 0, 0, 0.5);
+        }
+        .mode-card:focus-visible { outline: 2px solid var(--super); outline-offset: 3px; }
+        .mode-card.primary {
+            border-color: rgba(255, 183, 3, 0.45);
+            background: linear-gradient(180deg, rgba(255, 183, 3, 0.16), rgba(255, 122, 24, 0.08));
+        }
+
+        .mode-icon {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            color: var(--accent-2);
+            background: rgba(255, 183, 3, 0.12);
+            border: 1px solid rgba(255, 183, 3, 0.28);
+        }
+        .mode-icon svg { width: 17px; height: 17px; }
+
+        .mode-title {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .mode-desc {
+            font-size: 12px;
+            line-height: 1.35;
+            letter-spacing: 0.04em;
+            color: var(--text-dim);
+        }
+
+        /* ---------- SECTION LABELS ---------- */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 520px;
+            margin: 14px 0 8px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--stroke-strong), transparent);
+        }
+
+        /* ---------- LOCATION TILES ---------- */
+        #location-selection-container {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .location-btn {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.045);
             border: 1px solid var(--stroke);
             border-radius: 12px;
             box-shadow: none;
         }
+        .location-btn span:last-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .location-swatch {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 auto;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ---------- WEAPON CARDS ---------- */
+        #weapon-selection-container {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .weapon-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin: 0;
+            padding: 12px 10px;
+            font-size: 12px;
+            letter-spacing: 0.16em;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            box-shadow: none;
+        }
+        .weapon-btn svg { width: 22px; height: 22px; }
+        .weapon-meta {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
         .location-btn:hover:not(.selected), .weapon-btn:hover:not(.selected) {
             background: rgba(255, 255, 255, 0.1);
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
@@ -465,6 +638,7 @@
             border-color: rgba(255, 255, 255, 0.5);
             box-shadow: 0 0 0 1px rgba(255, 183, 3, 0.4), 0 12px 28px rgba(255, 122, 24, 0.4);
         }
+        .weapon-btn.selected .weapon-meta { opacity: 0.85; }
 
         .selection-container {
             display: flex;
@@ -528,7 +702,38 @@
             letter-spacing: 0.18em;
             margin-bottom: 10px;
         }
-        .upgrade-item .btn { font-size: 12px; padding: 9px 16px; }
+        .upgrade-item .btn { font-size: 12px; padding: 9px 16px; width: 100%; margin: 0; }
+
+        .upgrade-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .upgrade-head p { margin: 0; }
+        .upgrade-level {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            color: var(--accent-2);
+        }
+
+        .pips {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .pips i {
+            flex: 1;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .pips i.on {
+            background: linear-gradient(90deg, var(--accent-2), var(--accent));
+            box-shadow: 0 0 10px rgba(255, 122, 24, 0.5);
+        }
 
         .stat-pill {
             display: inline-flex;
@@ -606,7 +811,12 @@
             .health-text { font-size: 10px; }
             #score { font-size: 10px; letter-spacing: 0.2em; }
             .btn { padding: 9px 16px; font-size: 12px; }
-            .location-btn, .weapon-btn { min-width: 96px; }
+            .mode-grid { grid-template-columns: 1fr; gap: 8px; }
+            .mode-card { flex-direction: row; align-items: center; gap: 10px; padding: 10px 12px; }
+            .mode-desc { display: none; }
+            #location-selection-container { gap: 6px; }
+            .location-btn { font-size: 10px; letter-spacing: 0.1em; }
+            .weapon-meta { display: none; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -625,11 +835,13 @@
                 <div class="hud-tag"><span class="hud-name">PLAYER</span><span class="hud-role">Ally</span></div>
                 <div id="player-health" class="health-bar"><div class="health-fill"></div><div class="health-text">100%</div></div>
                 <div id="player-super-meter" class="super-meter"><div class="super-fill"></div></div>
+                <span class="ult-flag">Ult Ready &middot; Q</span>
             </div>
             <div id="enemy-hud" class="hud-side">
                 <div class="hud-tag"><span class="hud-name">ENEMY</span><span class="hud-role">Hostile</span></div>
                 <div id="enemy-health" class="health-bar"><div class="health-fill"></div><div class="health-text">100%</div></div>
                 <div id="enemy-super-meter" class="super-meter"><div class="super-fill"></div></div>
+                <span class="ult-flag">Ult Ready</span>
             </div>
             <div id="score">FIGHT!</div>
             <div id="combo-counter"></div>
@@ -642,10 +854,22 @@
             <div class="divider"></div>
             <p class="subtitle">Enter your callsign, soldier</p>
             <input type="text" id="player-name-input" placeholder="Type your name..." maxlength="12" autocomplete="off" spellcheck="false">
-            <div class="selection-container">
-                <button id="play-btn" class="btn">Campaign</button>
-                <button id="random-mode-btn" class="btn ghost">Random Fight</button>
-                <button id="barracks-btn" class="btn ghost">Barracks</button>
+            <div class="mode-grid">
+                <button id="play-btn" class="mode-card primary">
+                    <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4l8 3 8-3v11l-8 3-8-3z"/><path d="M12 7v14"/></svg></span>
+                    <span class="mode-title">Campaign</span>
+                    <span class="mode-desc">Clear escalating levels and boss fights.</span>
+                </button>
+                <button id="random-mode-btn" class="mode-card">
+                    <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2"/><circle cx="15.5" cy="15.5" r="1.2"/><circle cx="15.5" cy="8.5" r="1.2"/><circle cx="8.5" cy="15.5" r="1.2"/></svg></span>
+                    <span class="mode-title">Random Fight</span>
+                    <span class="mode-desc">Endless survival on random battlefields.</span>
+                </button>
+                <button id="barracks-btn" class="mode-card">
+                    <span class="mode-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.4-3 8-7 9-4-1-7-4.6-7-9V7z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg></span>
+                    <span class="mode-title">Barracks</span>
+                    <span class="mode-desc">Spend intel to upgrade your soldier.</span>
+                </button>
             </div>
             <div class="controls-hint">
                 <span><kbd>A</kbd><kbd>D</kbd> Move</span>
@@ -662,15 +886,18 @@
             <div class="stat-pill">Intel Points: <span id="intel-points-display">0</span></div>
             <div class="upgrade-container">
                 <div class="upgrade-item">
-                    <p>Health <span id="health-level">1</span></p>
+                    <div class="upgrade-head"><p>Health</p><span class="upgrade-level">LV <span id="health-level">1</span></span></div>
+                    <div class="pips" id="health-pips"></div>
                     <button id="upgrade-health-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
                 <div class="upgrade-item">
-                    <p>Damage <span id="damage-level">1</span></p>
+                    <div class="upgrade-head"><p>Damage</p><span class="upgrade-level">LV <span id="damage-level">1</span></span></div>
+                    <div class="pips" id="damage-pips"></div>
                     <button id="upgrade-damage-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
                 <div class="upgrade-item">
-                    <p>Speed <span id="speed-level">1</span></p>
+                    <div class="upgrade-head"><p>Speed</p><span class="upgrade-level">LV <span id="speed-level">1</span></span></div>
+                    <div class="pips" id="speed-pips"></div>
                     <button id="upgrade-speed-btn" class="btn">Upgrade (100 IP)</button>
                 </div>
             </div>
@@ -680,13 +907,25 @@
         <div id="selection-screen" class="screen">
             <p class="eyebrow">Mission Briefing</p>
             <h2 id="level-display">LEVEL 1 - FIGHT 1</h2>
-            <p class="subtitle">Battlefield</p>
-            <div id="location-selection-container" class="selection-container"></div>
-            <p class="subtitle">Weapon Loadout</p>
-            <div class="selection-container">
-                <button class="btn weapon-btn selected" data-weapon="rifle">Rifle</button>
-                <button class="btn weapon-btn" data-weapon="knife">Knife</button>
-                <button class="btn weapon-btn" data-weapon="fist">Fists</button>
+            <p class="section-label">Battlefield</p>
+            <div id="location-selection-container"></div>
+            <p class="section-label">Weapon Loadout</p>
+            <div id="weapon-selection-container">
+                <button class="btn weapon-btn selected" data-weapon="rifle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h15l3 2-3 2h-4l-2 4-2-4H8l-2 3-1-3H3z"/></svg>
+                    <span>Rifle</span>
+                    <span class="weapon-meta">Ranged &middot; 22 dmg</span>
+                </button>
+                <button class="btn weapon-btn" data-weapon="knife">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l7-7"/><path d="M11 13L20 4l-1 7-6 6z"/><path d="M8 16l-3 1-1 3"/></svg>
+                    <span>Knife</span>
+                    <span class="weapon-meta">Reach &middot; 18 dmg</span>
+                </button>
+                <button class="btn weapon-btn" data-weapon="fist">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a2 2 0 114 0v2"/><path d="M10 10V7a2 2 0 114 0v3"/><path d="M14 10V8a2 2 0 114 0v6a5 5 0 01-5 5h-2a5 5 0 01-5-5v-3"/></svg>
+                    <span>Fists</span>
+                    <span class="weapon-meta">Fast &middot; 12 dmg</span>
+                </button>
             </div>
             <div class="selection-container">
                 <button id="start-btn" class="btn">Start Mission</button>
@@ -749,6 +988,8 @@
             const backToHomeFromBarracksBtn = document.getElementById('back-to-home-from-barracks-btn');
             const intelEarnedDisplay = document.getElementById('intel-earned-display');
             const ultimateMoveDisplay = document.getElementById('ultimate-move-display');
+            const playerRole = document.querySelector('#player-hud .hud-role');
+            const enemyRole = document.querySelector('#enemy-hud .hud-role');
 
             // --- GAME STATE VARIABLES ---
             let gameRunning = false;
@@ -763,6 +1004,7 @@
             let ultimateNames = { rifle: "DEADEYE", knife: "VIPER STRIKE", fist: "OVERWHELM" };
 
             const playerStats = { health: 1, damage: 1, speed: 1, intelPoints: 0 };
+            const MAX_PIPS = 6;
             const gameState = { level: 1, fightInLevel: 1, randomLevel: 1 };
 
             const locations = ["desert", "forest", "city", "camp", "factory", "graveyard", "clouds", "underground", "ocean"];
@@ -1111,6 +1353,9 @@
                 const isBossFight = !isRandomMode && gameState.fightInLevel > 2;
                 player = new Player(100, 200, '#4CAF50', selectedWeapon);
                 enemy = isBossFight ? new Boss(650, 200, '#F44336', 'rifle') : new Player(670, 200, '#F44336', 'rifle', true);
+                playerRole.textContent = selectedWeapon;
+                enemyRole.textContent = isBossFight ? 'Boss' : 'Hostile';
+                scoreText.textContent = levelDisplay.textContent;
                 updateAllUI();
                 selectionScreen.style.display = 'none';
                 gameOverScreen.style.display = 'none';
@@ -1171,6 +1416,9 @@
                 if (!target) return;
                 const bar = target.isEnemy ? enemySuperBar : playerSuperBar;
                 bar.style.width = `${Math.min(100, target.superMeter)}%`;
+                const ready = target.superMeter >= 100;
+                bar.parentElement.classList.toggle('ready', ready);
+                bar.closest('.hud-side').classList.toggle('ult-ready', ready);
             }
 
             function createParticles(x, y, color, count, life) {
@@ -1324,7 +1572,13 @@
                 locations.forEach(loc => {
                     const btn = document.createElement('button');
                     btn.className = 'btn location-btn';
-                    btn.textContent = loc.toUpperCase();
+                    const bg = backgrounds[loc];
+                    const swatch = document.createElement('span');
+                    swatch.className = 'location-swatch';
+                    swatch.style.background = `linear-gradient(180deg, ${shade(bg.color, 26)} 0%, ${bg.color} 55%, ${bg.ground} 100%)`;
+                    const label = document.createElement('span');
+                    label.textContent = loc.toUpperCase();
+                    btn.append(swatch, label);
                     btn.dataset.location = loc;
                     btn.onclick = () => {
                         currentLocation = loc;
@@ -1342,15 +1596,27 @@
                 damageLevelDisplay.textContent = playerStats.damage;
                 speedLevelDisplay.textContent = playerStats.speed;
                 const upgrades = [
-                    [upgradeHealthBtn, playerStats.health],
-                    [upgradeDamageBtn, playerStats.damage],
-                    [upgradeSpeedBtn, playerStats.speed]
+                    [upgradeHealthBtn, playerStats.health, 'health-pips'],
+                    [upgradeDamageBtn, playerStats.damage, 'damage-pips'],
+                    [upgradeSpeedBtn, playerStats.speed, 'speed-pips']
                 ];
-                upgrades.forEach(([btn, level]) => {
+                upgrades.forEach(([btn, level, pipsId]) => {
                     const cost = level * 100;
                     btn.textContent = `Upgrade (${cost} IP)`;
                     btn.disabled = playerStats.intelPoints < cost;
+                    renderPips(document.getElementById(pipsId), level);
                 });
+            }
+
+            // Level meter: MAX_PIPS segments lit up to the current level.
+            function renderPips(container, level) {
+                if (!container) return;
+                container.innerHTML = '';
+                for (let i = 1; i <= MAX_PIPS; i++) {
+                    const pip = document.createElement('i');
+                    if (i <= Math.min(level, MAX_PIPS)) pip.className = 'on';
+                    container.appendChild(pip);
+                }
             }
 
             // --- EVENT LISTENERS ---
